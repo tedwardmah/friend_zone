@@ -252,6 +252,10 @@ app.get('/friendzone', function(req, res) {
     var finalResponse = {
         message: 'failed utterly'
     };
+    var counter = playlistNames.length;
+    var totalTracks = [];
+    var totalAddedTracks = [];
+    var responses = [];
     for (var pI=0 ; pI < playlistNames.length; pI++){
         request.get(apiOptions.friendZoneOptions( playlists[playlistNames[pI]] ), function(error, response, body) {
             var myResponse = {};
@@ -259,25 +263,32 @@ app.get('/friendzone', function(req, res) {
             var trackIds = [];
             var masterAddQueryString = '';
             if (!error && response.statusCode === 200) {
+                totalTracks.push(body.items.length);
                 for (var i = 0; i < body.items.length; i++) {
                     if (body.items[i].track.uri.indexOf('local') < 0) {
                         trackIds.push(body.items[i].track.uri);
                     }
                     
                 }
-                debugger;
+                totalAddedTracks.push(trackIds.length);
                 request.post(apiOptions.friendZoneMasterAdd(trackIds), function(error2, response2, body2) {
-                    debugger;
-                    finalResponse.message = body2;
+                    responses.push(body2);
+                    counter -= 1;
+                    if (counter === 0){
+                        res.send({
+                            message: 'You in the ZONE now boiiii',
+                            responses: responses,
+                            totalTracks: totalTracks,
+                            addedTracks: totalAddedTracks
+                        });
+                        
+                    }
                     // console.log('successfull addition for %s!!!', playlistNames[pI])
                     // if (pI === playlistNames.length - 1){
                     //     finalResponse.message = 'all additions successfull!!!'
                     // }
                 });
             }
-        });
-        res.send({
-            response: finalResponse
         });
     }
 });
