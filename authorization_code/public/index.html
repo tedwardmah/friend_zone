@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Example of the Authorization Code flow with Spotify</title>
+    <title>FriendZone!</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <style type="text/css">
       #login, #loggedin {
@@ -34,6 +34,9 @@
       </div>
       <div>
         <button class="btn btn-default" id="obtain-friend-zone">Enter...the friend zone!</button>
+      </div>      
+      <div>
+        <button class="btn btn-default" id="empty-friend-zone">BAIL OUT!!!...the friend zone!</button>
       </div>
     </div>
 
@@ -150,6 +153,14 @@
           document.getElementById('obtain-friend-zone').addEventListener('click', function(){
             $.ajax({
               url: '/friendzone'
+            }).done(function(data){
+              debugger
+              console.dir(data);
+            })
+          }, false);
+          document.getElementById('empty-friend-zone').addEventListener('click', function(){
+            $.ajax({
+              url: '/friendzone/empty'
             }).done(function(data){
               debugger
               console.dir(data);
