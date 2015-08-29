@@ -15,9 +15,49 @@ var cookieParser = require('cookie-parser');
 var client_id = process.env.FRIEND_ZONE_CLIENT_ID; // Your client id
 var client_secret = process.env.FRIEND_ZONE_CLIENT_SECRET; // Your client secret
 var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
-var userId = null;
+var userId = '1263219154'; //spotify:user:1263219154
 var stored_access_token = null;
-var master_playlist_id = '0WSVlLsBh8zDHARsTqSoXW';
+var FZsettings = {
+    masterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
+    friendZoneRadioId: '7F8BlhTzhRUfZf3saBKc58'
+};
+
+var apiOptions = {
+    getPlaylistTracks: function(playlistId, optionalQuery) {
+        var access_token = stored_access_token;
+        var query = optionalQuery ? ('?fields=' + optionalQuery) : '';
+        return {
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + playlistId + '/tracks' + query,
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            },
+            json: true
+        };
+    },
+    friendZoneMasterAdd: function(urisArray) {
+        var access_token = stored_access_token;
+        return {
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.friendZoneRadioId + '/tracks',
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            },
+            body: {
+                'uris': urisArray
+            },
+            json: true
+        };
+    },
+    getAllUserPlaylists: function() {
+        var access_token = stored_access_token;
+        return {
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists?limit=50',
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            },
+            json: true
+        };
+    }
+};
 
 /**
  * Generates a random string containing numbers and letters
@@ -152,13 +192,7 @@ app.get('/refresh_token', function(req, res) {
 
 app.get('/playlists', function(req, res) {
     var access_token = stored_access_token;
-    var playlistsOptions = {
-        url: 'https://api.spotify.com/v1/users/' + userId + '/playlists',
-        headers: {
-            'Authorization': 'Bearer ' + access_token
-        },
-        json: true
-    };
+    var playlistsOptions = apiOptions.getAllUserPlaylists();
 
     request.get(playlistsOptions, function(error, response, body) {
         if (!error && response.statusCode === 200) {
@@ -170,37 +204,24 @@ app.get('/playlists', function(req, res) {
     });
 });
 
-app.get('/friendzone/empty', function(req, res){ 
-    var access_token = stored_access_token;
-    var emptyOptions = {
-        url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + master_playlist_id + '/tracks',
-        headers: {
-            'Authorization': 'Bearer ' + access_token
-        },
-        json: true
-    };
+app.get('/friendzone/empty', function(req, res) {
+    var playlistToEmptyId = FZsettings.friendZoneRadioId;
 
+    var emptyOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
+    var getTracksToDeleteOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
 
-    var getMasterTracksOptions = {
-        url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + master_playlist_id + '/tracks',
-        headers: {
-            'Authorization': 'Bearer ' + access_token
-        },
-        json: true
-    };
-
-    request.get(getMasterTracksOptions, function(error, response, body) {
+    request.get(getTracksToDeleteOptions, function(error, response, body) {
         var trackIds = [];
         if (!error && response.statusCode === 200) {
             for (var i = 0; i < body.items.length; i++) {
-                trackIds.push( {
+                trackIds.push({
                     uri: body.items[i].track.uri
-                });                
+                });
             }
             emptyOptions.body = {
                 tracks: trackIds
             };
-            request.del(emptyOptions, function(error2, response2, body2){
+            request.del(emptyOptions, function(error2, response2, body2) {
                 res.send({
                     body: body2
                 });
@@ -210,83 +231,75 @@ app.get('/friendzone/empty', function(req, res){
     });
 });
 
+app.get('/friendzone/prune', function(req, res) {
+    var masterPlaylistId = FZsettings.friendZoneRadioId;
+    request.get(apiOptions.getPlaylistTracks(masterPlaylistId, 'items.track.uri'), function(error, response, body) {
+        res.send({
+            message: 'saul goode',
+            body: body
+        });
+    });
+});
+
+var addPlaylists = function addPlaylists(playlistNameArray, tracksToAddArray, callback){
+    var playlist = playlistNameArray.pop();
+    if (playlist !== undefined){
+
+
+        debugger
+        callback.call(playlistNameArray, callback);
+    }
+}
+
 app.get('/friendzone', function(req, res) {
-    // spotify:user:1263219154:playlist:0WSVlLsBh8zDHARsTqSoXW
-    // /v1/users/{user_id}/playlists/{playlist_id}/tracks
-    // march: spotify:user:1263219154:playlist:3Bx4pYALhO3uz7xpyPCFog
     var playlists = {
-        // march: '3Bx4pYALhO3uz7xpyPCFog',
-        april: '4ZxRnNoRY6kfde6ObumcIJ', // spotify:user:1263219154:playlist:4ZxRnNoRY6kfde6ObumcIJ
+        march: '3Bx4pYALhO3uz7xpyPCFog', //spotify:user:1263219154:playlist:3Bx4pYALhO3uz7xpyPCFog
+        april: '4ZxRnNoRY6kfde6ObumcIJ', //spotify:user:1263219154:playlist:4ZxRnNoRY6kfde6ObumcIJ
         may: '0WXmnDBQlFwnOomrZKcxvi', //spotify:user:1263219154:playlist:0WXmnDBQlFwnOomrZKcxvi
         june: '5TtSuNT4VzUC891uNF6WEM', //spotify:user:1263219154:playlist:5TtSuNT4VzUC891uNF6WEM
         july: '745orEm9Fk4NPldihQuPYy', //spotify:user:1263219154:playlist:745orEm9Fk4NPldihQuPYy
         august: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
     };
 
-    var access_token = stored_access_token;
-    var apiOptions = {
-        friendZoneOptions: function(playlistId) {
-            return {
-                url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + playlistId + '/tracks',
-                headers: {
-                    'Authorization': 'Bearer ' + access_token
-                },
-                json: true
-            };
-        },
-        friendZoneMasterAdd: function(urisArray) {
-            return {
-                url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + master_playlist_id + '/tracks',
-                headers: {
-                    'Authorization': 'Bearer ' + access_token
-                },
-                body: {
-                    'uris': urisArray
-                },
-                json: true
-            };
-        }
-    };
-
     var playlistNames = Object.keys(playlists);
-    var finalResponse = {
-        message: 'failed utterly'
-    };
+    var tracksToAdd = [];
+
     var counter = playlistNames.length;
     var totalTracks = [];
     var totalAddedTracks = [];
     var responses = [];
-    for (var pI=0 ; pI < playlistNames.length; pI++){
-        request.get(apiOptions.friendZoneOptions( playlists[playlistNames[pI]] ), function(error, response, body) {
-            var myResponse = {};
-            var myResponse2 = {};
+
+    // addPlaylists(playlistNameArray, tracksToAdd, addPlaylists);
+
+    for (var pI = 0; pI < playlistNames.length; pI++) {
+        var index = pI;
+        request.get(apiOptions.getPlaylistTracks(playlists[playlistNames[pI]]), function(error, response, body) {
             var trackIds = [];
-            var masterAddQueryString = '';
+            var playlistHref = body.href;
             if (!error && response.statusCode === 200) {
                 totalTracks.push(body.items.length);
                 for (var i = 0; i < body.items.length; i++) {
                     if (body.items[i].track.uri.indexOf('local') < 0) {
                         trackIds.push(body.items[i].track.uri);
                     }
-                    
+
                 }
                 totalAddedTracks.push(trackIds.length);
                 request.post(apiOptions.friendZoneMasterAdd(trackIds), function(error2, response2, body2) {
-                    responses.push(body2);
+                    responses.push({
+                        href: playlistHref,
+                        body: body2
+                    });
                     counter -= 1;
-                    if (counter === 0){
+                    if (counter === 0) {
                         res.send({
                             message: 'You in the ZONE now boiiii',
                             responses: responses,
                             totalTracks: totalTracks,
                             addedTracks: totalAddedTracks
                         });
-                        
+
                     }
-                    // console.log('successfull addition for %s!!!', playlistNames[pI])
-                    // if (pI === playlistNames.length - 1){
-                    //     finalResponse.message = 'all additions successfull!!!'
-                    // }
                 });
             }
         });
