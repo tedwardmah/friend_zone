@@ -244,7 +244,6 @@ app.get('/friendzone/prune', function(req, res) {
 
 var addPlaylistsTracks = function addPlaylistsTracks(playlistURIArray, tracksToAddArray, callback, sendResponseCallback) {
     var playlistURI = playlistURIArray.pop();
-    // debugger;
     if (playlistURI !== undefined) {
         request.get(apiOptions.getPlaylistTracks(playlistURI, 'items.track.uri'), function(error, response, body) {
             if (!error && response.statusCode === 200) {
@@ -259,12 +258,6 @@ var addPlaylistsTracks = function addPlaylistsTracks(playlistURIArray, tracksToA
             }
         });
     } else {
-        // res.send({
-        //     message: 'You in the ZONE now boiiii',
-        //     responses: tracksToAddArray,
-        //     // totalTracks: totalTracks,
-        //     // addedTracks: totalAddedTracks
-        // });
         sendResponseCallback(tracksToAddArray);
     }
 };
