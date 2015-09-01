@@ -21,7 +21,7 @@ var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 var userId = '1263219154'; //spotify:user:1263219154
 var stored_access_token = null;
 var FZsettings = {
-    friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
+    // friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
     friendZoneRadioId: '7F8BlhTzhRUfZf3saBKc58',
     backupPlaylistId: '2nkd4hRD6MMDw60qrfW7zW', //August the Second
 };
@@ -41,7 +41,7 @@ var apiOptions = {
     friendZoneMasterAdd: function(urisArray) {
         var access_token = stored_access_token;
         return {
-            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.backupPlaylistId + '/tracks',
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.friendZoneRadioId + '/tracks',
             headers: {
                 'Authorization': 'Bearer ' + access_token
             },
@@ -57,6 +57,20 @@ var apiOptions = {
             url: 'https://api.spotify.com/v1/users/' + userId + '/playlists?limit=50',
             headers: {
                 'Authorization': 'Bearer ' + access_token
+            },
+            json: true
+        };
+    },
+    addToBackUp: function(backupPlaylistId, urisArray) {
+        var access_token = stored_access_token;
+        // var backupPlaylistId = backupPlaylistId || FZsettings.backupPlaylistId;
+        return {
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + backupPlaylistId+ '/tracks',
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            },
+            body: {
+                'uris': urisArray
             },
             json: true
         };
@@ -101,6 +115,7 @@ var getCutoffDate = function(daysAgo) {
     return cutoff;
 };
 
+
 var sortFriendZoneRadio = function(playlistURI, backupPlaylistURI, sendResponseCallback) {
     var tracksToAddArray = [];
     request.get(apiOptions.getPlaylistTracks(playlistURI), function(error, response, body) {
@@ -121,11 +136,17 @@ var sortFriendZoneRadio = function(playlistURI, backupPlaylistURI, sendResponseC
             }
         }
         // Move items off this playlist into backup playlist //TODO add function to auto-determine the month of the backup playlist
+        addToBackUp(backupPlaylistURI, tracksToAddArray, sendResponseCallback);
 
-        sendResponseCallback.call(this, {
-            tracksToAddArray: tracksToAddArray
-        });
         // pruneFriendZone(backupPlaylistURI, tracksToAddArray, sendResponseCallback);
+    });
+};
+
+var addToBackUp = function(backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
+    request.post(apiOptions.addToBackUp(backupPlaylistURI, tracksToAddArray), function(error, response, body) {
+        sendResponseCallback.call(this, {
+            body: body
+        });
     });
 };
 
