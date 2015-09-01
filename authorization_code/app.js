@@ -19,7 +19,7 @@ var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 var userId = '1263219154'; //spotify:user:1263219154
 var stored_access_token = null;
 var FZsettings = {
-    masterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
+    friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
     friendZoneRadioId: '7F8BlhTzhRUfZf3saBKc58'
 };
 
@@ -91,6 +91,8 @@ var getPlaylistURIs = function getPlaylistURIs() {
     }
     return playlistURIs;
 };
+
+// Pass an array of spotify playlistUris, along with an empty array and the sendResponseCallback that gives access to the client response
 var getPlaylistsTracks = function getPlaylistsTracks(playlistURIArray, tracksToAddArray, callback, sendResponseCallback) {
     var playlistURI = playlistURIArray.pop();
     if (playlistURI !== undefined) {
@@ -104,17 +106,19 @@ var getPlaylistsTracks = function getPlaylistsTracks(playlistURIArray, tracksToA
                     } else {
                         console.log('ERROR when adding %s', uri);
                     }
-
                 }
+                //continue to pass array of playlists, array holding all uris
                 callback.call(this, playlistURIArray, tracksToAddArray, callback, sendResponseCallback);
             }
         });
     } else {
+        // Call the function that will add tracks 100 at a time to a playlist (configured in apiOptions object)
         addPlaylistsTracksToMaster(tracksToAddArray, addPlaylistsTracksToMaster, sendResponseCallback);
     }
 };
 
-var addPlaylistsTracksToMaster = function addPlaylistsTracksToMaster(tracksToAddArray, callbacksweat, sendResponseCallback){
+//
+var addPlaylistsTracksToMaster = function addPlaylistsTracksToMaster(tracksToAddArray, callback, sendResponseCallback){
     if (tracksToAddArray && tracksToAddArray.length > 0) {
         console.log('tracksToAddArray is %s in length', tracksToAddArray.length);
         var currentAddition = tracksToAddArray.splice(0, 100);
@@ -123,7 +127,7 @@ var addPlaylistsTracksToMaster = function addPlaylistsTracksToMaster(tracksToAdd
             //     href: playlistHref,
             //     body: body2
             // });
-            callbacksweat.call(this, tracksToAddArray, callbacksweat, sendResponseCallback);
+            callback.call(this, tracksToAddArray, callback, sendResponseCallback);
         });
     } else {
         sendResponseCallback();
@@ -301,7 +305,7 @@ app.get('/friendzone', function(req, res) {
     var sendResponse = function sendResponse(playlistURIs){
             res.send({
                 message: 'You in the ZONE now boiiii',
-                // responses: playlistURIs
+                // responses: playlistURIs,
                 // totalTracks: totalTracks,
                 // addedTracks: totalAddedTracks
             });
