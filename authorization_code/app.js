@@ -23,7 +23,8 @@ var stored_access_token = null;
 var FZsettings = {
     // friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
     friendZoneRadioId: '7F8BlhTzhRUfZf3saBKc58',
-    backupPlaylistId: '2nkd4hRD6MMDw60qrfW7zW', //August the Second
+    backupPlaylistId: '2nkd4hRD6MMDw60qrfW7zW', //August the Second,
+    debuggerPlaylist: '0NpOn7HwkFgvDz7G7c0FTU' //August the first
 };
 
 var apiOptions = {
@@ -65,7 +66,7 @@ var apiOptions = {
         var access_token = stored_access_token;
         // var backupPlaylistId = backupPlaylistId || FZsettings.backupPlaylistId;
         return {
-            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + backupPlaylistId+ '/tracks',
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + backupPlaylistId + '/tracks',
             headers: {
                 'Authorization': 'Bearer ' + access_token
             },
@@ -136,19 +137,40 @@ var sortFriendZoneRadio = function(playlistURI, backupPlaylistURI, sendResponseC
             }
         }
         // Move items off this playlist into backup playlist //TODO add function to auto-determine the month of the backup playlist
-        addToBackUp(backupPlaylistURI, tracksToAddArray, sendResponseCallback);
+        addToBackUp(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback);
 
         // pruneFriendZone(backupPlaylistURI, tracksToAddArray, sendResponseCallback);
     });
 };
 
-var addToBackUp = function(backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
+var addToBackUp = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
     request.post(apiOptions.addToBackUp(backupPlaylistURI, tracksToAddArray), function(error, response, body) {
+        removeFromFriendZoneRadio(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback);
+    });
+};
+
+var removeFromFriendZoneRadio = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
+    // var playlistToEmptyId = playlistURI;
+    var playlistToEmptyId = FZsettings.friendZoneRadioId; //TODO remove this debugger and use the passed one
+    var formattedArray = function () { 
+        var returnArray = [];
+        for (var u = 0; u < tracksToAddArray.length; u++) {
+            returnArray.push({
+                uri: tracksToAddArray[u]
+            })
+        }
+        return returnArray;
+    }
+    var emptyOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
+    emptyOptions.body = {
+        tracks: formattedArray()
+    };
+    request.del(emptyOptions, function(error, response, body) {
         sendResponseCallback.call(this, {
             body: body
         });
     });
-};
+}
 
 // Pass an array of spotify playlistUris, along with an empty array and the sendResponseCallback that gives access to the client response
 var getPlaylistsTracks = function getPlaylistsTracks(playlistURIArray, tracksToAddArray, callback, sendResponseCallback) {
@@ -350,8 +372,8 @@ app.get('/friendzone/empty', function(req, res) {
 });
 
 app.get('/friendzone/prune', function(req, res) {
-    // var masterPlaylistId = FZsettings.friendZoneRadioId;
-    var masterPlaylistId = '73k1L1bpCRqbbUAltTRMp4';
+    // var playlistToPrune = FZsettings.friendZoneRadioId;
+    var playlistToPrune = '73k1L1bpCRqbbUAltTRMp4'; //FriendZone August
     var backupPlaylistId = FZsettings.backupPlaylistId;
     var sendResponse = function(data) {
         res.send({
@@ -360,13 +382,7 @@ app.get('/friendzone/prune', function(req, res) {
         });
     };
 
-    sortFriendZoneRadio(masterPlaylistId, backupPlaylistId, sendResponse);
-    // request.get(apiOptions.getPlaylistTracks(masterPlaylistId, 'items.track.uri'), function(error, response, body) {
-    //     res.send({
-    //         message: 'saul goode',
-    //         body: body
-    //     });
-    // });
+    sortFriendZoneRadio(playlistToPrune, backupPlaylistId, sendResponse);
 });
 
 app.get('/friendzone', function(req, res) {
