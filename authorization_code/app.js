@@ -21,10 +21,10 @@ var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 var userId = '1263219154'; //spotify:user:1263219154
 var stored_access_token = null;
 var FZsettings = {
-    // friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
-    friendZoneRadioId: '7F8BlhTzhRUfZf3saBKc58',
-    backupPlaylistId: '2nkd4hRD6MMDw60qrfW7zW', //August the Second,
-    debuggerPlaylist: '0NpOn7HwkFgvDz7G7c0FTU' //August the first
+    friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
+    fzAugustMasterBackup: '7F8BlhTzhRUfZf3saBKc58',
+    friendZoneRadioId: '73k1L1bpCRqbbUAltTRMp4', //FKA FZ August
+    backupPlaylistId: '0NpOn7HwkFgvDz7G7c0FTU' //August the first
 };
 
 var apiOptions = {
@@ -42,7 +42,7 @@ var apiOptions = {
     friendZoneMasterAdd: function(urisArray) {
         var access_token = stored_access_token;
         return {
-            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.friendZoneRadioId + '/tracks',
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.fzAugustMasterBackup + '/tracks',
             headers: {
                 'Authorization': 'Bearer ' + access_token
             },
@@ -64,7 +64,6 @@ var apiOptions = {
     },
     addToBackUp: function(backupPlaylistId, urisArray) {
         var access_token = stored_access_token;
-        // var backupPlaylistId = backupPlaylistId || FZsettings.backupPlaylistId;
         return {
             url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + backupPlaylistId + '/tracks',
             headers: {
@@ -100,7 +99,7 @@ var getPlaylistURIs = function getPlaylistURIs() {
         // may: '0WXmnDBQlFwnOomrZKcxvi', //spotify:user:1263219154:playlist:0WXmnDBQlFwnOomrZKcxvi
         // june: '5TtSuNT4VzUC891uNF6WEM', //spotify:user:1263219154:playlist:5TtSuNT4VzUC891uNF6WEM
         // july: '745orEm9Fk4NPldihQuPYy', //spotify:user:1263219154:playlist:745orEm9Fk4NPldihQuPYy
-        august: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
+        // friendZoneRadio: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
     };
     var playlistNames = Object.keys(playlists);
     var playlistURIs = [];
@@ -138,29 +137,27 @@ var sortFriendZoneRadio = function(playlistURI, backupPlaylistURI, sendResponseC
         }
         // Move items off this playlist into backup playlist //TODO add function to auto-determine the month of the backup playlist
         addToBackUp(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback);
-
-        // pruneFriendZone(backupPlaylistURI, tracksToAddArray, sendResponseCallback);
     });
 };
 
-var addToBackUp = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
+var addToBackUp = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) { //TODO consolidate these passed options into a single object
     request.post(apiOptions.addToBackUp(backupPlaylistURI, tracksToAddArray), function(error, response, body) {
         removeFromFriendZoneRadio(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback);
     });
 };
 
 var removeFromFriendZoneRadio = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
-    // var playlistToEmptyId = playlistURI;
-    var playlistToEmptyId = FZsettings.friendZoneRadioId; //TODO remove this debugger and use the passed one
-    var formattedArray = function () { 
+    var playlistToEmptyId = playlistURI;
+
+    var formattedArray = function () { //TODO move this declaration outside of the function, need to pass an array in and return an array
         var returnArray = [];
         for (var u = 0; u < tracksToAddArray.length; u++) {
             returnArray.push({
                 uri: tracksToAddArray[u]
-            })
+            });
         }
         return returnArray;
-    }
+    };
     var emptyOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
     emptyOptions.body = {
         tracks: formattedArray()
@@ -170,7 +167,7 @@ var removeFromFriendZoneRadio = function(playlistURI, backupPlaylistURI, tracksT
             body: body
         });
     });
-}
+};
 
 // Pass an array of spotify playlistUris, along with an empty array and the sendResponseCallback that gives access to the client response
 var getPlaylistsTracks = function getPlaylistsTracks(playlistURIArray, tracksToAddArray, callback, sendResponseCallback) {
@@ -345,7 +342,7 @@ app.get('/playlists', function(req, res) {
 });
 
 app.get('/friendzone/empty', function(req, res) {
-    var playlistToEmptyId = FZsettings.backupPlaylistId;
+    var playlistToEmptyId = FZsettings.friendZoneMasterPlaylistId;
 
     var emptyOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
     var getTracksToDeleteOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
@@ -372,8 +369,8 @@ app.get('/friendzone/empty', function(req, res) {
 });
 
 app.get('/friendzone/prune', function(req, res) {
-    // var playlistToPrune = FZsettings.friendZoneRadioId;
-    var playlistToPrune = '73k1L1bpCRqbbUAltTRMp4'; //FriendZone August
+    var playlistToPrune = FZsettings.friendZoneRadioId;
+    // var playlistToPrune = '73k1L1bpCRqbbUAltTRMp4'; //FriendZone August
     var backupPlaylistId = FZsettings.backupPlaylistId;
     var sendResponse = function(data) {
         res.send({
