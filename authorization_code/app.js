@@ -9,6 +9,7 @@
 
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
+var when = require('when');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
@@ -241,15 +242,48 @@ app.get('/friendzone/prune', function(req, res) {
     });
 });
 
-var addPlaylists = function addPlaylists(playlistNameArray, tracksToAddArray, callback){
-    var playlist = playlistNameArray.pop();
-    if (playlist !== undefined){
+var addPlaylistsTracks = function addPlaylistsTracks(playlistURIArray, tracksToAddArray, callback, sendResponseCallback) {
+    var playlistURI = playlistURIArray.pop();
+    // debugger;
+    if (playlistURI !== undefined) {
+        request.get(apiOptions.getPlaylistTracks(playlistURI, 'items.track.uri'), function(error, response, body) {
+            if (!error && response.statusCode === 200) {
+                for (var i = 0; i < body.items.length; i++) {
+                    if (body.items[i].track.uri.indexOf('local') < 0) {
+                        tracksToAddArray.push(body.items[i].track.uri);
+                    }
 
-
-        debugger
-        callback.call(playlistNameArray, callback);
+                }
+                // debugger;
+                callback.call(this, playlistURIArray, tracksToAddArray, callback, sendResponseCallback);
+            }
+        });
+    } else {
+        // res.send({
+        //     message: 'You in the ZONE now boiiii',
+        //     responses: tracksToAddArray,
+        //     // totalTracks: totalTracks,
+        //     // addedTracks: totalAddedTracks
+        // });
+        sendResponseCallback(tracksToAddArray);
     }
-}
+};
+var getPlaylistURIs = function getPlaylistURIs() {
+    var playlists = {
+        march: '3Bx4pYALhO3uz7xpyPCFog', //spotify:user:1263219154:playlist:3Bx4pYALhO3uz7xpyPCFog
+        april: '4ZxRnNoRY6kfde6ObumcIJ', //spotify:user:1263219154:playlist:4ZxRnNoRY6kfde6ObumcIJ
+        may: '0WXmnDBQlFwnOomrZKcxvi', //spotify:user:1263219154:playlist:0WXmnDBQlFwnOomrZKcxvi
+        june: '5TtSuNT4VzUC891uNF6WEM', //spotify:user:1263219154:playlist:5TtSuNT4VzUC891uNF6WEM
+        july: '745orEm9Fk4NPldihQuPYy', //spotify:user:1263219154:playlist:745orEm9Fk4NPldihQuPYy
+        august: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
+    };
+    var playlistNames = Object.keys(playlists);
+    var playlistURIs = [];
+    for (var i = 0; i < playlistNames.length; i++) {
+        playlistURIs.push(playlists[playlistNames[i]]);
+    }
+    return playlistURIs;
+};
 
 app.get('/friendzone', function(req, res) {
     var playlists = {
@@ -262,48 +296,73 @@ app.get('/friendzone', function(req, res) {
     };
 
     var playlistNames = Object.keys(playlists);
+
+    var sendResponse = function sendResponse(playlistURIs){
+            res.send({
+                message: 'You in the ZONE now boiiii',
+                responses: playlistURIs
+                // totalTracks: totalTracks,
+                // addedTracks: totalAddedTracks
+            });
+        };
     var tracksToAdd = [];
+    addPlaylistsTracks(getPlaylistURIs(), tracksToAdd, addPlaylistsTracks, sendResponse);
 
-    var counter = playlistNames.length;
-    var totalTracks = [];
-    var totalAddedTracks = [];
-    var responses = [];
+    // var promise = when.promise(function(resolve, reject, notify){
 
-    // addPlaylists(playlistNameArray, tracksToAdd, addPlaylists);
+    //     var playlistTracks = addPlaylistsTracks(getPlaylistURIs(), tracksToAdd, addPlaylistsTracks);
+        
+    // });
 
-    for (var pI = 0; pI < playlistNames.length; pI++) {
-        var index = pI;
-        request.get(apiOptions.getPlaylistTracks(playlists[playlistNames[pI]]), function(error, response, body) {
-            var trackIds = [];
-            var playlistHref = body.href;
-            if (!error && response.statusCode === 200) {
-                totalTracks.push(body.items.length);
-                for (var i = 0; i < body.items.length; i++) {
-                    if (body.items[i].track.uri.indexOf('local') < 0) {
-                        trackIds.push(body.items[i].track.uri);
-                    }
+    // request.post(apiOptions.friendZoneMasterAdd(trackIds), function(error, response, body) {
+    // res.send({
+    //     message: 'You in the ZONE now boiiii',
+    //     responses: responses,
+    //     body, body
+    //     // totalTracks: totalTracks,
+    //     // addedTracks: totalAddedTracks
+    // });
+    // });
 
-                }
-                totalAddedTracks.push(trackIds.length);
-                request.post(apiOptions.friendZoneMasterAdd(trackIds), function(error2, response2, body2) {
-                    responses.push({
-                        href: playlistHref,
-                        body: body2
-                    });
-                    counter -= 1;
-                    if (counter === 0) {
-                        res.send({
-                            message: 'You in the ZONE now boiiii',
-                            responses: responses,
-                            totalTracks: totalTracks,
-                            addedTracks: totalAddedTracks
-                        });
 
-                    }
-                });
-            }
-        });
-    }
+    // var totalTracks = [];
+    // var totalAddedTracks = [];
+    // var responses = [];
+    // var counter = playlistNames.length;
+    // for (var pI = 0; pI < playlistNames.length; pI++) {
+    //     var index = pI;
+    //     request.get(apiOptions.getPlaylistTracks(playlists[playlistNames[pI]]), function(error, response, body) {
+    //         var trackIds = [];
+    //         var playlistHref = body.href;
+    //         if (!error && response.statusCode === 200) {
+    //             totalTracks.push(body.items.length);
+    //             for (var i = 0; i < body.items.length; i++) {
+    //                 if (body.items[i].track.uri.indexOf('local') < 0) {
+    //                     trackIds.push(body.items[i].track.uri);
+    //                 }
+
+    //             }
+    //             totalAddedTracks.push(trackIds.length);
+    //             request.post(apiOptions.friendZoneMasterAdd(trackIds), function(error2, response2, body2) {
+    //                 responses.push({
+    //                     href: playlistHref,
+    //                     body: body2
+    //                 });
+    //                 counter -= 1;
+    //                 if (counter === 0) {
+    //                     res.send({
+    //                         message: 'You in the ZONE now boiiii',
+    //                         responses: responses,
+    //                         totalTracks: totalTracks,
+    //                         addedTracks: totalAddedTracks
+    //                     });
+
+    //                 }
+    //             });
+    //         }
+    //     });
+    // }
+
 });
 
 console.log('Listening on 8888');
