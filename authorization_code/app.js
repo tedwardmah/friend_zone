@@ -43,7 +43,7 @@ var apiOptions = {
     friendZoneMasterAdd: function(urisArray) {
         var access_token = stored_access_token;
         return {
-            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.fzAugustMasterBackup + '/tracks',
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + FZsettings.debuggerPlaylist + '/tracks',
             headers: {
                 'Authorization': 'Bearer ' + access_token
             },
@@ -67,6 +67,19 @@ var apiOptions = {
         var access_token = stored_access_token;
         return {
             url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + backupPlaylistId + '/tracks',
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            },
+            body: {
+                'uris': urisArray
+            },
+            json: true
+        };
+    },
+    addToPlaylist: function(playlistId, urisArray) {
+        var access_token = stored_access_token;
+        return {
+            url: 'https://api.spotify.com/v1/users/' + userId + '/playlists/' + playlistId + '/tracks',
             headers: {
                 'Authorization': 'Bearer ' + access_token
             },
@@ -99,8 +112,8 @@ var getPlaylistURIs = function getPlaylistURIs() {
         // april: '4ZxRnNoRY6kfde6ObumcIJ', //spotify:user:1263219154:playlist:4ZxRnNoRY6kfde6ObumcIJ
         // may: '0WXmnDBQlFwnOomrZKcxvi', //spotify:user:1263219154:playlist:0WXmnDBQlFwnOomrZKcxvi
         // june: '5TtSuNT4VzUC891uNF6WEM', //spotify:user:1263219154:playlist:5TtSuNT4VzUC891uNF6WEM
-        // july: '745orEm9Fk4NPldihQuPYy', //spotify:user:1263219154:playlist:745orEm9Fk4NPldihQuPYy
-        // friendZoneRadio: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
+        july: '745orEm9Fk4NPldihQuPYy', //spotify:user:1263219154:playlist:745orEm9Fk4NPldihQuPYy
+        friendZoneRadio: '73k1L1bpCRqbbUAltTRMp4' //spotify:user:1263219154:playlist:73k1L1bpCRqbbUAltTRMp4
     };
     var playlistNames = Object.keys(playlists);
     var playlistURIs = [];
@@ -142,7 +155,7 @@ var sortFriendZoneRadio = function(playlistURI, backupPlaylistURI, sendResponseC
 };
 
 var addToBackUp = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) { //TODO consolidate these passed options into a single object
-    request.post(apiOptions.addToBackUp(backupPlaylistURI, tracksToAddArray), function(error, response, body) {
+    request.post(apiOptions.addToPlaylist(backupPlaylistURI, tracksToAddArray), function(error, response, body) {
         removeFromFriendZoneRadio(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback);
     });
 };
@@ -150,7 +163,7 @@ var addToBackUp = function(playlistURI, backupPlaylistURI, tracksToAddArray, sen
 var removeFromFriendZoneRadio = function(playlistURI, backupPlaylistURI, tracksToAddArray, sendResponseCallback) {
     var playlistToEmptyId = playlistURI;
 
-    var formattedArray = function () { //TODO move this declaration outside of the function, need to pass an array in and return an array
+    var formattedArray = function() { //TODO move this declaration outside of the function, need to pass an array in and return an array
         var returnArray = [];
         for (var u = 0; u < tracksToAddArray.length; u++) {
             returnArray.push({
@@ -343,7 +356,7 @@ app.get('/playlists', function(req, res) {
 });
 
 app.get('/friendzone/empty', function(req, res) {
-    var playlistToEmptyId = FZsettings.friendZoneMasterPlaylistId;
+    var playlistToEmptyId = FZsettings.debuggerPlaylist;
 
     var emptyOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
     var getTracksToDeleteOptions = apiOptions.getPlaylistTracks(playlistToEmptyId);
@@ -383,7 +396,7 @@ app.get('/friendzone/prune', function(req, res) {
     sortFriendZoneRadio(playlistToPrune, backupPlaylistId, sendResponse);
 });
 
-app.get('/friendzone', function(req, res) {
+app.get('/friendzone/backup', function(req, res) {
     var sendResponse = function sendResponse(playlistURIs) {
         res.send({
             message: 'You in the ZONE now boiiii',
@@ -393,6 +406,39 @@ app.get('/friendzone', function(req, res) {
         });
     };
     getPlaylistsTracks(getPlaylistURIs(), [], getPlaylistsTracks, sendResponse);
+});
+
+var getPlaylist = function getPlaylist(playlistId) {
+    var d = when.defer();
+    request.get(apiOptions.getPlaylistTracks(playlistId), function(error, response, body) {
+        var thing = body;
+        d.resolve(thing);
+    });
+    return d.promise;
+};
+
+app.get('/friendzone/fetchTracks', function(req, res) {
+    var playlistURIs = getPlaylistURIs();
+
+    var promiseMe = getPlaylist(playlistURIs[0]);
+    var promiseMeToo = getPlaylist(playlistURIs[1]);
+
+    var newYearsDay = when.all([promiseMe, promiseMeToo]);
+
+    newYearsDay.then(
+        function(serviceResponse) {
+            res.send({
+                message: 'You in the ZONE now boiiii',
+                response: serviceResponse
+            });
+        },
+        function(error) {
+            res.send({
+                message: 'Something went wrong...fear not',
+                response: serviceResponse
+            });
+        }
+    );
 });
 
 console.log('Listening on 8888');
