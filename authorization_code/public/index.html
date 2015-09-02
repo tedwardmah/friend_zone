@@ -31,6 +31,9 @@
         <button class="btn btn-default" id="obtain-new-token">Obtain new token using the refresh token</button>
       </div>
       <div>
+        <button class="btn btn-default" id="fetch-tracks">Promise me you'll be better next time</button>
+      </div>     
+      <div>
         <button class="btn btn-default" id="obtain-playlists">All User Playlists</button>
       </div>
       <div>
@@ -174,6 +177,14 @@
           document.getElementById('prune-friend-zone').addEventListener('click', function(){
             $.ajax({
               url: '/friendzone/prune'
+            }).done(function(data){
+              debugger
+              console.dir(data);
+            })
+          }, false);
+          document.getElementById('fetch-tracks').addEventListener('click', function(){
+            $.ajax({
+              url: '/friendzone/fetchTracks'
             }).done(function(data){
               debugger
               console.dir(data);
