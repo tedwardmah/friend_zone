@@ -21,9 +21,10 @@ var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 var userId = '1263219154'; //spotify:user:1263219154
 var stored_access_token = null;
 var FZsettings = {
+    debuggerPlaylist: '3xK9wu5wet6fyy0I9mAk77', //Debugger
     friendZoneMasterPlaylistId: '0WSVlLsBh8zDHARsTqSoXW',
-    fzAugustMasterBackup: '7F8BlhTzhRUfZf3saBKc58',
-    friendZoneRadioId: '73k1L1bpCRqbbUAltTRMp4', //FKA FZ August
+    fzAugustMasterBackup: '7F8BlhTzhRUfZf3saBKc58', //FZ August Master Backup
+    friendZoneRadioId: '73k1L1bpCRqbbUAltTRMp4', //Friend Zone Radio (FKA FZ August)
     backupPlaylistId: '0NpOn7HwkFgvDz7G7c0FTU' //August the first
 };
 
